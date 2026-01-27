@@ -1,4 +1,4 @@
-import { Node, mergeAttributes, Content } from '@tiptap/core';
+import { Node, Content } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { MermaidBlock } from './MermaidBlock';
 
@@ -21,10 +21,16 @@ export const MermaidExtension = Node.create({
     return {
       code: {
         default: '',
-        parseHTML: (element) => element.getAttribute('data-code') || element.textContent || '',
-        renderHTML: (attributes) => ({
-          'data-code': attributes.code,
-        }),
+        parseHTML: (element) => {
+          // For pre[data-type="mermaid"], get code from code element's textContent
+          const codeElement = element.querySelector('code');
+          if (codeElement) {
+            return codeElement.textContent || '';
+          }
+          // Fallback: try data-code attribute or textContent
+          return element.getAttribute('data-code') || element.textContent || '';
+        },
+        renderHTML: () => ({}), // code is rendered as textContent, not as attribute
       },
     };
   },
@@ -32,26 +38,22 @@ export const MermaidExtension = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'div[data-type="mermaid"]',
+        // New format: pre[data-type="mermaid"] with code as textContent
+        tag: 'pre[data-type="mermaid"]',
       },
       {
-        tag: 'pre.mermaid-code',
-        getAttrs: (node) => {
-          const element = node as HTMLElement;
-          const codeElement = element.querySelector('code');
-          return {
-            code: codeElement?.textContent || element.textContent || '',
-          };
-        },
+        // Legacy format: div[data-type="mermaid"] with data-code attribute
+        tag: 'div[data-type="mermaid"]',
       },
     ];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node }) {
+    // Render as pre > code to preserve code through DOMPurify
     return [
-      'div',
-      mergeAttributes(HTMLAttributes, { 'data-type': 'mermaid' }),
-      HTMLAttributes['data-code'] || '',
+      'pre',
+      { 'data-type': 'mermaid' },
+      ['code', { class: 'language-mermaid' }, node.attrs.code || ''],
     ];
   },
 

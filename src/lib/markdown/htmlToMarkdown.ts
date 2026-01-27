@@ -67,6 +67,12 @@ function convertNode(node: Node): string {
       return `\`${children}\``;
 
     case 'pre': {
+      // Handle mermaid blocks (new format with pre[data-type="mermaid"])
+      if (element.getAttribute('data-type') === 'mermaid') {
+        const codeElement = element.querySelector('code');
+        const codeContent = codeElement ? codeElement.textContent || '' : element.textContent || '';
+        return `\`\`\`mermaid\n${codeContent}\n\`\`\`\n\n`;
+      }
       const codeElement = element.querySelector('code');
       const codeContent = codeElement ? convertNode(codeElement) : children;
       const language = codeElement?.className.match(/language-(\w+)/)?.[1] || '';
@@ -116,9 +122,11 @@ function convertNode(node: Node): string {
       return convertTable(element) + '\n\n';
 
     case 'div': {
-      // Handle mermaid blocks
+      // Handle mermaid blocks (legacy format with data-code attribute)
       if (element.getAttribute('data-type') === 'mermaid') {
-        const mermaidCode = element.getAttribute('data-code') || element.textContent || '';
+        const rawCode = element.getAttribute('data-code') || element.textContent || '';
+        // Decode HTML entities that were escaped during markdownToHtml conversion
+        const mermaidCode = decodeHtmlEntities(rawCode);
         return `\`\`\`mermaid\n${mermaidCode}\n\`\`\`\n\n`;
       }
       return children;
@@ -204,4 +212,13 @@ function convertTable(table: Element): string {
   });
 
   return result.join('\n');
+}
+
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 }
