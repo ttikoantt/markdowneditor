@@ -115,7 +115,15 @@ function convertNode(node: Node): string {
     case 'table':
       return convertTable(element) + '\n\n';
 
-    case 'div':
+    case 'div': {
+      // Handle mermaid blocks
+      if (element.getAttribute('data-type') === 'mermaid') {
+        const mermaidCode = element.getAttribute('data-code') || element.textContent || '';
+        return `\`\`\`mermaid\n${mermaidCode}\n\`\`\`\n\n`;
+      }
+      return children;
+    }
+
     case 'span':
     case 'body':
       return children;
