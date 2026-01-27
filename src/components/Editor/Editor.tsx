@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Toolbar } from './Toolbar';
 import { StatusBar } from './StatusBar';
 import { useAppStore } from '../../store';
+import { MermaidExtension } from './MermaidExtension';
 
 const lowlight = createLowlight(common);
 
@@ -73,6 +74,7 @@ export function Editor({ content, onChange, placeholder = 'Start writing...' }: 
       CodeBlockLowlight.configure({
         lowlight,
       }),
+      MermaidExtension,
     ],
     content,
     editorProps: {

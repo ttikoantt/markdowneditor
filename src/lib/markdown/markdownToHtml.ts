@@ -40,6 +40,10 @@ function convertToHtml(node: Root | Content): string {
       return `<code>${escapeHtml(node.value)}</code>`;
 
     case 'code':
+      // Handle mermaid code blocks specially
+      if (node.lang === 'mermaid') {
+        return `<div data-type="mermaid" data-code="${escapeHtml(node.value)}"></div>`;
+      }
       const lang = node.lang ? ` class="language-${node.lang}"` : '';
       return `<pre><code${lang}>${escapeHtml(node.value)}</code></pre>`;
 
