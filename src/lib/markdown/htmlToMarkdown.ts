@@ -67,13 +67,12 @@ function convertNode(node: Node): string {
       return `\`${children}\``;
 
     case 'pre': {
-      // Handle mermaid blocks (new format with pre[data-type="mermaid"])
-      if (element.getAttribute('data-type') === 'mermaid') {
-        const codeElement = element.querySelector('code');
-        const codeContent = codeElement ? codeElement.textContent || '' : element.textContent || '';
+      // Handle mermaid blocks from pre > code.language-mermaid format
+      const codeElement = element.querySelector('code');
+      if (codeElement?.classList.contains('language-mermaid')) {
+        const codeContent = codeElement.textContent || '';
         return `\`\`\`mermaid\n${codeContent}\n\`\`\`\n\n`;
       }
-      const codeElement = element.querySelector('code');
       const codeContent = codeElement ? convertNode(codeElement) : children;
       const language = codeElement?.className.match(/language-(\w+)/)?.[1] || '';
       return `\`\`\`${language}\n${codeContent}\n\`\`\`\n\n`;
@@ -122,8 +121,8 @@ function convertNode(node: Node): string {
       return convertTable(element) + '\n\n';
 
     case 'div': {
-      // Handle mermaid blocks (legacy format with data-code attribute)
-      if (element.getAttribute('data-type') === 'mermaid') {
+      // Handle mermaid blocks (both data-mermaid and legacy data-type formats)
+      if (element.hasAttribute('data-mermaid') || element.getAttribute('data-type') === 'mermaid') {
         const rawCode = element.getAttribute('data-code') || element.textContent || '';
         // Decode HTML entities that were escaped during markdownToHtml conversion
         const mermaidCode = decodeHtmlEntities(rawCode);

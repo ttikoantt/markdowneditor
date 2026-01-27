@@ -21,15 +21,8 @@ export const MermaidExtension = Node.create({
     return {
       code: {
         default: '',
-        parseHTML: (element) => {
-          // For pre[data-type="mermaid"], get code from code element's textContent
-          const codeElement = element.querySelector('code');
-          if (codeElement) {
-            return codeElement.textContent || '';
-          }
-          // Fallback: try data-code attribute or textContent
-          return element.getAttribute('data-code') || element.textContent || '';
-        },
+        // Explicitly disable automatic attribute parsing - we handle it in parseHTML's getAttrs
+        parseHTML: () => null,
         renderHTML: () => ({}), // code is rendered as textContent, not as attribute
       },
     };
@@ -38,22 +31,48 @@ export const MermaidExtension = Node.create({
   parseHTML() {
     return [
       {
-        // New format: pre[data-type="mermaid"] with code as textContent
-        tag: 'pre[data-type="mermaid"]',
+        // Primary format: div with data-mermaid attribute
+        tag: 'div[data-mermaid]',
+        priority: 100,
+        getAttrs: (node) => {
+          const element = node as HTMLElement;
+          const code = element.getAttribute('data-code') || element.textContent || '';
+          return { code };
+        },
+      },
+      {
+        // Match pre with code.language-mermaid (from markdown conversion)
+        tag: 'pre',
+        priority: 100,
+        getAttrs: (node) => {
+          const element = node as HTMLElement;
+          const codeElement = element.querySelector('code.language-mermaid');
+          if (codeElement) {
+            const code = codeElement.textContent || '';
+            return { code };
+          }
+          return false; // Don't match
+        },
       },
       {
         // Legacy format: div[data-type="mermaid"] with data-code attribute
         tag: 'div[data-type="mermaid"]',
+        priority: 100,
+        getAttrs: (node) => {
+          const element = node as HTMLElement;
+          const code = element.getAttribute('data-code') || element.textContent || '';
+          return { code };
+        },
       },
     ];
   },
 
   renderHTML({ node }) {
-    // Render as pre > code to preserve code through DOMPurify
+    // Render as div with data-mermaid and data-code attributes
+    // This format is simpler and avoids Tiptap's pre element processing issues
     return [
-      'pre',
-      { 'data-type': 'mermaid' },
-      ['code', { class: 'language-mermaid' }, node.attrs.code || ''],
+      'div',
+      { 'data-mermaid': 'true', 'data-code': node.attrs.code || '' },
     ];
   },
 

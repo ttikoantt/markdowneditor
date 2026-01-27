@@ -11,24 +11,24 @@ ${simpleMermaid}
 \`\`\``;
 
   describe('markdownToHtml', () => {
-    it('should convert mermaid code block to pre with data-type="mermaid"', () => {
+    it('should convert mermaid code block to div with data-mermaid attribute', () => {
       const result = markdownToHtml(mermaidMarkdown);
-      expect(result).toContain('data-type="mermaid"');
-      expect(result).toContain('<pre');
+      expect(result).toContain('data-mermaid="true"');
+      expect(result).toContain('<div');
     });
 
-    it('should preserve mermaid code as textContent in code element', () => {
+    it('should preserve mermaid code in data-code attribute', () => {
       const result = markdownToHtml(mermaidMarkdown);
-      expect(result).toContain('language-mermaid');
+      expect(result).toContain('data-code=');
       // Check that the content is preserved (may be escaped)
       expect(result).toContain('graph');
       expect(result).toContain('Start');
     });
 
-    it('should render mermaid with proper code structure', () => {
+    it('should render mermaid with proper div structure', () => {
       const result = markdownToHtml(mermaidMarkdown);
-      expect(result).toContain('<pre data-type="mermaid">');
-      expect(result).toContain('<code class="language-mermaid">');
+      expect(result).toContain('<div data-mermaid="true"');
+      expect(result).toContain('data-code="');
     });
 
     it('should still render regular code blocks correctly', () => {
@@ -38,30 +38,37 @@ const x = 1;
       const result = markdownToHtml(jsCode);
       expect(result).toContain('<pre>');
       expect(result).toContain('language-javascript');
-      expect(result).not.toContain('data-type="mermaid"');
+      expect(result).not.toContain('data-mermaid');
     });
   });
 
   describe('htmlToMarkdown', () => {
-    it('should convert mermaid pre back to markdown code block', () => {
-      const html = `<pre data-type="mermaid"><code class="language-mermaid">${simpleMermaid}</code></pre>`;
+    it('should convert mermaid div back to markdown code block', () => {
+      const html = `<div data-mermaid="true" data-code="${simpleMermaid}"></div>`;
       const result = htmlToMarkdown(html, { sanitize: false });
       expect(result).toContain('```mermaid');
       expect(result).toContain('```');
     });
 
     it('should preserve mermaid code content when converting back', () => {
-      const html = `<pre data-type="mermaid"><code class="language-mermaid">graph TD\n    A --> B</code></pre>`;
+      const html = `<div data-mermaid="true" data-code="graph TD\n    A --> B"></div>`;
       const result = htmlToMarkdown(html, { sanitize: false });
       expect(result).toContain('graph TD');
       expect(result).toContain('A --> B');
     });
 
-    it('should handle legacy div format with data-code attribute', () => {
+    it('should handle legacy div format with data-type attribute', () => {
       const html = `<div data-type="mermaid" data-code="graph TD\n    A --&gt; B"></div>`;
       const result = htmlToMarkdown(html, { sanitize: false });
       expect(result).toContain('```mermaid');
       expect(result).toContain('A --> B');
+    });
+
+    it('should handle pre > code.language-mermaid format', () => {
+      const html = `<pre><code class="language-mermaid">sequenceDiagram\n    A->>B: Hello</code></pre>`;
+      const result = htmlToMarkdown(html, { sanitize: false });
+      expect(result).toContain('```mermaid');
+      expect(result).toContain('sequenceDiagram');
     });
   });
 
@@ -109,11 +116,11 @@ graph TD
   });
 
   describe('DOMPurify sanitization', () => {
-    it('should preserve data-type attribute after sanitization', () => {
+    it('should preserve data-mermaid attribute after sanitization', () => {
       const result = markdownToHtml(mermaidMarkdown, { sanitize: true });
       console.log('Sanitized result:', result);
-      // DOMPurify should preserve data-type attribute
-      expect(result).toContain('data-type="mermaid"');
+      // DOMPurify should preserve data-mermaid attribute
+      expect(result).toContain('data-mermaid="true"');
     });
 
     it('should preserve mermaid code through sanitization', () => {

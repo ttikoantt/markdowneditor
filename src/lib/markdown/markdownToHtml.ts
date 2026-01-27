@@ -41,9 +41,9 @@ function convertToHtml(node: Root | Content): string {
 
     case 'code':
       // Handle mermaid code blocks specially
-      // Store code as textContent to avoid double-escaping issues with DOMPurify
+      // Use div with data-mermaid and data-code attributes to avoid Tiptap's pre element issues
       if (node.lang === 'mermaid') {
-        return `<pre data-type="mermaid"><code class="language-mermaid">${escapeHtml(node.value)}</code></pre>`;
+        return `<div data-mermaid="true" data-code="${escapeHtml(node.value)}"></div>`;
       }
       const lang = node.lang ? ` class="language-${node.lang}"` : '';
       return `<pre><code${lang}>${escapeHtml(node.value)}</code></pre>`;
